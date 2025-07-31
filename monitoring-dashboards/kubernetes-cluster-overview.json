@@ -1,0 +1,117 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Kubernetes Cluster Overview",
+    "tags": ["kubernetes", "cluster"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Cluster Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "kube_node_status_ready{condition=\"true\"}",
+            "legendFormat": "Ready Nodes"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Pod Status Across Namespaces",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(kube_pod_status_ready{condition=\"true\"}) by (namespace)",
+            "legendFormat": "{{namespace}} - Ready Pods"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Pod Restart Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(kube_pod_container_status_restarts_total[5m])",
+            "legendFormat": "{{namespace}}/{{pod}}"
+          }
+        ],
+        "yAxes": [
+          {"label": "Restarts/sec", "min": 0}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "Memory Usage by Namespace",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(container_memory_working_set_bytes{container!=\"POD\",container!=\"\"}) by (namespace)",
+            "legendFormat": "{{namespace}}"
+          }
+        ],
+        "yAxes": [
+          {"label": "Bytes", "min": 0}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "CPU Usage by Namespace",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"POD\",container!=\"\"}[5m])) by (namespace)",
+            "legendFormat": "{{namespace}}"
+          }
+        ],
+        "yAxes": [
+          {"label": "CPU Cores", "min": 0}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 6,
+        "title": "Pod Errors by Namespace",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "kube_pod_status_ready{condition=\"false\"} == 1",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {"Time": true, "__name__": true, "condition": true, "endpoint": true, "instance": true, "job": true, "service": true},
+              "renameByName": {"namespace": "Namespace", "pod": "Pod Name", "Value": "Status"}
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16}
+      }
+    ],
+    "time": {"from": "now-1h", "to": "now"},
+    "refresh": "30s"
+  }
+}

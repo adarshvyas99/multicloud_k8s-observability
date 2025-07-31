@@ -1,0 +1,164 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: monitoring
+data:
+  alertmanager.yml: |
+    global:
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: 'alerts@company.com'
+      smtp_auth_username: 'alerts@company.com'
+      smtp_auth_password: 'your-app-password'
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 1h
+      receiver: 'web.hook'
+      routes:
+      - match:
+          severity: critical
+        receiver: 'critical-alerts'
+      - match:
+          component: pod
+        receiver: 'pod-alerts'
+      - match:
+          component: node
+        receiver: 'infrastructure-alerts'
+    receivers:
+    - name: 'web.hook'
+      webhook_configs:
+      - url: 'http://webhook-service:5000/webhook'
+        send_resolved: true
+    - name: 'critical-alerts'
+      email_configs:
+      - to: 'devops-team@company.com'
+        subject: 'CRITICAL: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Severity: {{ .Labels.severity }}
+          Namespace: {{ .Labels.namespace }}
+          Pod: {{ .Labels.pod }}
+          Time: {{ .StartsAt }}
+          {{ end }}
+    - name: 'pod-alerts'
+      email_configs:
+      - to: 'dev-team@company.com'
+        subject: 'Pod Alert: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+        body: |
+          {{ range .Alerts }}
+          Pod Issue Detected:
+          - Alert: {{ .Annotations.summary }}
+          - Description: {{ .Annotations.description }}
+          - Namespace: {{ .Labels.namespace }}
+          - Pod: {{ .Labels.pod }}
+          - Container: {{ .Labels.container }}
+          - Time: {{ .StartsAt }}
+          
+          Root Cause Analysis Steps:
+          1. Check pod logs: kubectl logs {{ .Labels.pod }} -n {{ .Labels.namespace }}
+          2. Describe pod: kubectl describe pod {{ .Labels.pod }} -n {{ .Labels.namespace }}
+          3. Check events: kubectl get events -n {{ .Labels.namespace }} --sort-by='.lastTimestamp'
+          {{ end }}
+    - name: 'infrastructure-alerts'
+      email_configs:
+      - to: 'infrastructure-team@company.com'
+        subject: 'Infrastructure Alert: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+        body: |
+          {{ range .Alerts }}
+          Infrastructure Issue:
+          - Alert: {{ .Annotations.summary }}
+          - Description: {{ .Annotations.description }}
+          - Component: {{ .Labels.component }}
+          - Node: {{ .Labels.node }}
+          - Time: {{ .StartsAt }}
+          {{ end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: alertmanager-storage
+  namespace: monitoring
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: managed-premium
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      containers:
+      - name: alertmanager
+        image: prom/alertmanager:v0.25.0
+        args:
+          - '--config.file=/etc/alertmanager/alertmanager.yml'
+          - '--storage.path=/alertmanager'
+          - '--web.external-url=http://localhost:9093'
+        ports:
+        - containerPort: 9093
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        volumeMounts:
+        - name: alertmanager-config-volume
+          mountPath: /etc/alertmanager
+        - name: alertmanager-storage-volume
+          mountPath: /alertmanager
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9093
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9093
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
+      volumes:
+      - name: alertmanager-config-volume
+        configMap:
+          name: alertmanager-config
+      - name: alertmanager-storage-volume
+        persistentVolumeClaim:
+          claimName: alertmanager-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  selector:
+    app: alertmanager
+  type: ClusterIP
+  ports:
+    - port: 9093
+      targetPort: 9093

@@ -1,0 +1,79 @@
+name: GitOps Deployment
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'gitops/**'
+      - 'overlays/**'
+  workflow_dispatch:
+    inputs:
+      gitops_tool:
+        description: 'GitOps tool to deploy'
+        required: true
+        default: 'argocd'
+        type: choice
+        options:
+        - argocd
+        - flux
+
+env:
+  KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA_PROD }}
+
+jobs:
+  deploy-argocd:
+    name: Deploy ArgoCD Application
+    runs-on: ubuntu-latest
+    if: github.event.inputs.gitops_tool == 'argocd' || contains(github.event.head_commit.message, '[argocd]')
+    environment: gitops
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG_DATA_PROD }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Validate overlays
+      run: |
+        echo "Validating Kustomize overlays..."
+        kubectl kustomize overlays/aks --dry-run=client
+        kubectl kustomize overlays/gke --dry-run=client
+        kubectl kustomize overlays/eks --dry-run=client
+        
+    - name: Deploy ArgoCD Application
+      run: |
+        export KUBECONFIG=kubeconfig
+        kubectl apply -f gitops/argocd/application.yaml
+        echo "✅ ArgoCD application deployed"
+
+  deploy-flux:
+    name: Deploy Flux GitOps
+    runs-on: ubuntu-latest
+    if: github.event.inputs.gitops_tool == 'flux' || contains(github.event.head_commit.message, '[flux]')
+    environment: gitops
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG_DATA_PROD }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Deploy Flux GitOps
+      run: |
+        export KUBECONFIG=kubeconfig
+        kubectl apply -f gitops/flux/kustomization.yaml
+        echo "✅ Flux GitOps deployed"

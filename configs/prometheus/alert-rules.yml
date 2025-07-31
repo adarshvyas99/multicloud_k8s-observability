@@ -1,0 +1,109 @@
+groups:
+- name: kubernetes-pods
+  rules:
+  - alert: PodCrashLooping
+    expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+    for: 5m
+    labels:
+      severity: warning
+      component: pod
+    annotations:
+      summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping"
+      description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has been restarting {{ $value }} times in the last 15 minutes"
+      runbook_url: "https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubepodcrashlooping"
+
+  - alert: PodNotReady
+    expr: kube_pod_status_ready{condition="false"} == 1
+    for: 10m
+    labels:
+      severity: warning
+      component: pod
+    annotations:
+      summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} not ready"
+      description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has been in a non-ready state for longer than 10 minutes"
+
+  - alert: PodMemoryUsageHigh
+    expr: (container_memory_working_set_bytes{container!="POD",container!=""} / container_spec_memory_limit_bytes) * 100 > 90
+    for: 5m
+    labels:
+      severity: warning
+      component: pod
+    annotations:
+      summary: "High memory usage in pod {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} memory usage is above 90%"
+
+  - alert: PodCPUUsageHigh
+    expr: (rate(container_cpu_usage_seconds_total{container!="POD",container!=""}[5m]) / container_spec_cpu_quota * container_spec_cpu_period) * 100 > 90
+    for: 5m
+    labels:
+      severity: warning
+      component: pod
+    annotations:
+      summary: "High CPU usage in pod {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} CPU usage is above 90%"
+
+- name: kubernetes-nodes
+  rules:
+  - alert: NodeNotReady
+    expr: kube_node_status_ready{condition="false"} == 1
+    for: 10m
+    labels:
+      severity: critical
+      component: node
+    annotations:
+      summary: "Node {{ $labels.node }} is not ready"
+      description: "Node {{ $labels.node }} has been unready for more than 10 minutes"
+
+  - alert: NodeMemoryUsageHigh
+    expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 90
+    for: 5m
+    labels:
+      severity: warning
+      component: node
+    annotations:
+      summary: "High memory usage on node {{ $labels.instance }}"
+      description: "Node {{ $labels.instance }} memory usage is above 90%"
+
+  - alert: NodeDiskUsageHigh
+    expr: (node_filesystem_size_bytes{fstype!="tmpfs"} - node_filesystem_free_bytes{fstype!="tmpfs"}) / node_filesystem_size_bytes{fstype!="tmpfs"} * 100 > 90
+    for: 5m
+    labels:
+      severity: warning
+      component: node
+    annotations:
+      summary: "High disk usage on node {{ $labels.instance }}"
+      description: "Node {{ $labels.instance }} disk usage is above 90%"
+
+- name: kubernetes-deployments
+  rules:
+  - alert: DeploymentReplicasMismatch
+    expr: kube_deployment_spec_replicas != kube_deployment_status_available_replicas
+    for: 10m
+    labels:
+      severity: warning
+      component: deployment
+    annotations:
+      summary: "Deployment {{ $labels.namespace }}/{{ $labels.deployment }} has mismatched replicas"
+      description: "Deployment {{ $labels.namespace }}/{{ $labels.deployment }} has {{ $labels.spec_replicas }} desired but {{ $labels.available_replicas }} available replicas"
+
+- name: application-errors
+  rules:
+  - alert: HighErrorRate
+    expr: rate(prometheus_http_requests_total{code=~"5.."}[5m]) > 0.1
+    for: 5m
+    labels:
+      severity: critical
+      component: application
+    annotations:
+      summary: "High error rate detected"
+      description: "Error rate is {{ $value }} errors per second"
+
+  - alert: PodLogErrors
+    expr: increase(log_messages_total{level="error"}[5m]) > 10
+    for: 2m
+    labels:
+      severity: warning
+      component: application
+    annotations:
+      summary: "High number of error logs in {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has generated {{ $value }} error log messages in the last 5 minutes"
