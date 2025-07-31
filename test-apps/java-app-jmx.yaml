@@ -1,0 +1,128 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jmx-config
+  namespace: default
+data:
+  jmx_prometheus_javaagent.yml: |
+    rules:
+    - pattern: "java.lang<type=Memory><>HeapMemoryUsage"
+      name: jvm_memory_heap_bytes
+      type: GAUGE
+      labels:
+        area: "heap"
+    - pattern: "java.lang<type=Memory><>NonHeapMemoryUsage"
+      name: jvm_memory_nonheap_bytes
+      type: GAUGE
+      labels:
+        area: "nonheap"
+    - pattern: "java.lang<type=GarbageCollector,name=(.*)><>CollectionCount"
+      name: jvm_gc_collection_total
+      type: COUNTER
+      labels:
+        gc: "$1"
+    - pattern: "java.lang<type=GarbageCollector,name=(.*)><>CollectionTime"
+      name: jvm_gc_collection_seconds_total
+      type: COUNTER
+      labels:
+        gc: "$1"
+    - pattern: "java.lang<type=Threading><>ThreadCount"
+      name: jvm_threads_current
+      type: GAUGE
+    - pattern: "java.lang<type=Threading><>DaemonThreadCount"
+      name: jvm_threads_daemon
+      type: GAUGE
+    - pattern: "java.lang<type=ClassLoading><>LoadedClassCount"
+      name: jvm_classes_loaded
+      type: GAUGE
+    - pattern: "java.lang<type=Runtime><>Uptime"
+      name: jvm_uptime_seconds
+      type: GAUGE
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: java-app
+  namespace: default
+  labels:
+    app: java-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: java-app
+  template:
+    metadata:
+      labels:
+        app: java-app
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: java-app
+        image: openjdk:11-jdk-slim
+        command: 
+        - /bin/sh
+        - -c
+        - |
+          apt-get update && apt-get install -y wget
+          wget -O /opt/jmx_prometheus_javaagent.jar https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.19.0/jmx_prometheus_javaagent-0.19.0.jar
+          cat > /tmp/App.java << 'EOF'
+          import java.util.*;
+          public class App {
+            public static void main(String[] args) throws Exception {
+              List<byte[]> memory = new ArrayList<>();
+              Random rand = new Random();
+              System.out.println("Java App Started - JMX metrics on port 8080");
+              while(true) {
+                if(rand.nextInt(10) < 3) {
+                  memory.add(new byte[1024 * 1024]);
+                }
+                if(memory.size() > 50) {
+                  memory.clear();
+                  System.gc();
+                }
+                for(int i = 0; i < 100000; i++) {
+                  Math.sqrt(i);
+                }
+                Thread.sleep(5000);
+                System.out.println("Memory objects: " + memory.size());
+              }
+            }
+          }
+          EOF
+          javac /tmp/App.java
+          java -javaagent:/opt/jmx_prometheus_javaagent.jar=8080:/etc/jmx/jmx_prometheus_javaagent.yml -cp /tmp App
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        volumeMounts:
+        - name: jmx-config
+          mountPath: /etc/jmx
+      volumes:
+      - name: jmx-config
+        configMap:
+          name: jmx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: java-app
+  namespace: default
+  labels:
+    app: java-app
+spec:
+  selector:
+    app: java-app
+  ports:
+  - name: metrics
+    port: 8080
+    targetPort: 8080
