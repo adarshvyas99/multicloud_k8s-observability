@@ -23,15 +23,22 @@ This solution provides a comprehensive observability layer for Kubernetes cluste
 
 ### Directory Structure
 ```
-multicloud_k8s-observability/
-├── manifests/              # Kubernetes manifests
-│   ├── namespace/          # Monitoring namespace and RBAC
-│   ├── prometheus/         # Prometheus deployment and config
-│   ├── grafana/           # Grafana deployment and config
-│   ├── alertmanager/      # AlertManager deployment and config
-│   ├── exporters/         # Node Exporter and Kube-state-metrics
+K8sObservabilityStack/
+├── .github/              # GitHub configuration
+│   └── workflows/        # GitHub Actions workflows
+│       ├── deploy.yml    # Main deployment workflow
+│       └── gitops-deploy.yml # GitOps deployment workflow
+├── manifests/            # Kubernetes manifests
+│   ├── namespace/        # Monitoring namespace and RBAC
+│   ├── prometheus/       # Prometheus deployment and config
+│   ├── grafana/          # Grafana deployment and config
+│   │   ├── grafana-deployment.yaml
+│   │   ├── grafana-config.template.yaml # Templated config
+│   │   └── grafana-secret.template.yaml # Templated secret
+│   ├── alertmanager/     # AlertManager deployment and config
+│   ├── exporters/        # Node Exporter and Kube-state-metrics
 │   └── kustomization.yaml # Base Kustomize configuration
-├── overlays/              # Cloud-specific Kustomize overlays
+├── overlays/             # Cloud-specific Kustomize overlays
 │   ├── aks/              # Azure AKS specific configurations
 │   ├── gke/              # Google GKE specific configurations
 │   └── eks/              # AWS EKS specific configurations
@@ -39,7 +46,7 @@ multicloud_k8s-observability/
 │   ├── argocd/           # ArgoCD application definitions
 │   └── flux/             # Flux GitRepository and Kustomization
 ├── ci-cd/                # CI/CD pipeline configurations
-│   └── github-actions/   # GitHub Actions workflows
+│   └── azure-devops/     # Azure DevOps pipeline
 ├── configs/              # Configuration files
 │   ├── prometheus/       # Prometheus rules and config
 │   ├── grafana/          # Grafana datasources and config
@@ -55,6 +62,7 @@ multicloud_k8s-observability/
 │   ├── troubleshooting.md # Troubleshooting guide
 │   ├── gitops.md         # GitOps implementation guide
 │   ├── data-migration.md # Data migration procedures
+│   ├── environment-setup.md # Environment setup guide
 │   └── architecture-diagram.md # Complete architecture diagram
 ├── monitoring-dashboards/ # Grafana dashboard definitions
 ├── DEPLOYMENT_GUIDE.md   # Comprehensive deployment guide
