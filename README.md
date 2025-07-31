@@ -106,5 +106,10 @@ The solution uses cloud-agnostic configurations with automatic adaptation:
 ### 📈 **Perfect For**
 Organizations running Kubernetes workloads who need reliable monitoring, proactive alerting, and the flexibility to migrate between cloud providers without losing historical data or reconfiguring their observability stack.
 
+### Setup & Configuration
+- **Environment Setup**: `docs/environment-setup.md` - Required secrets and variables
+- **GitOps Guide**: `docs/gitops.md` - ArgoCD/Flux implementation
+- **Architecture**: `docs/architecture-diagram.md` - Complete system overview
+
 ### Support
 For issues and questions, refer to the troubleshooting guide in `docs/troubleshooting.md`

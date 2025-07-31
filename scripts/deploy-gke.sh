@@ -41,6 +41,13 @@ sed -i 's/storageClassName: managed-premium/storageClassName: standard-rwo/g' ..
 echo "📦 Creating monitoring namespace and RBAC..."
 kubectl apply -f ../manifests/namespace/monitoring-namespace.yaml
 
+# Create Grafana configuration and credentials
+echo "🔐 Creating Grafana configuration..."
+export GRAFANA_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+export GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin123}
+envsubst < ../manifests/grafana/grafana-config.template.yaml | kubectl apply -f -
+envsubst < ../manifests/grafana/grafana-secret.template.yaml | kubectl apply -f -
+
 # Deploy exporters
 echo "📊 Deploying exporters..."
 kubectl apply -f ../manifests/exporters/node-exporter.yaml

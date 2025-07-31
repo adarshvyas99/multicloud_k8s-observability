@@ -24,6 +24,7 @@ on:
 
 env:
   KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+  GRAFANA_ADMIN_USER: ${{ secrets.GRAFANA_ADMIN_USER }}
   GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
 
 jobs:
@@ -75,6 +76,11 @@ jobs:
         
         # Deploy components
         kubectl apply -f manifests/namespace/monitoring-namespace.yaml
+        
+        # Create Grafana configuration
+        envsubst < manifests/grafana/grafana-config.template.yaml | kubectl apply -f -
+        envsubst < manifests/grafana/grafana-secret.template.yaml | kubectl apply -f -
+        
         kubectl apply -f manifests/exporters/
         kubectl apply -f manifests/prometheus/prometheus-deployment.yaml
         kubectl apply -f manifests/alertmanager/alertmanager-deployment.yaml
@@ -116,6 +122,11 @@ jobs:
         
         # Deploy components
         kubectl apply -f manifests/namespace/monitoring-namespace.yaml
+        
+        # Create Grafana configuration
+        envsubst < manifests/grafana/grafana-config.template.yaml | kubectl apply -f -
+        envsubst < manifests/grafana/grafana-secret.template.yaml | kubectl apply -f -
+        
         kubectl apply -f manifests/exporters/
         kubectl apply -f manifests/prometheus/prometheus-deployment.yaml
         kubectl apply -f manifests/alertmanager/alertmanager-deployment.yaml
@@ -164,6 +175,11 @@ jobs:
         
         # Deploy components
         kubectl apply -f manifests/namespace/monitoring-namespace.yaml
+        
+        # Create Grafana configuration
+        envsubst < manifests/grafana/grafana-config.template.yaml | kubectl apply -f -
+        envsubst < manifests/grafana/grafana-secret.template.yaml | kubectl apply -f -
+        
         kubectl apply -f manifests/exporters/
         kubectl apply -f manifests/prometheus/prometheus-deployment.yaml
         kubectl apply -f manifests/alertmanager/alertmanager-deployment.yaml
@@ -205,6 +221,11 @@ jobs:
         
         # Deploy components
         kubectl apply -f manifests/namespace/monitoring-namespace.yaml
+        
+        # Create Grafana configuration
+        envsubst < manifests/grafana/grafana-config.template.yaml | kubectl apply -f -
+        envsubst < manifests/grafana/grafana-secret.template.yaml | kubectl apply -f -
+        
         kubectl apply -f manifests/exporters/
         kubectl apply -f manifests/prometheus/prometheus-deployment.yaml
         kubectl apply -f manifests/alertmanager/alertmanager-deployment.yaml
