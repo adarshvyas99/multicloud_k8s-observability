@@ -134,7 +134,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 5Gi
+      storage: 50Gi
   storageClassName: managed-premium # AKS default, will be updated for GKE or EKS
 ---
 apiVersion: apps/v1
