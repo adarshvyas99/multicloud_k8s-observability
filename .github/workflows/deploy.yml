@@ -63,11 +63,12 @@ jobs:
     - name: Configure kubectl
       run: |
         echo "${{ secrets.KUBE_CONFIG_DATA_DEV }}" | base64 -d > kubeconfig
-        export KUBECONFIG=kubeconfig
+        chmod 600 kubeconfig
 
     - name: Deploy to Development
+      env:
+        KUBECONFIG: kubeconfig
       run: |
-        export KUBECONFIG=kubeconfig
         
         # Update storage class for target environment
         sed -i 's/storageClassName: managed-premium/storageClassName: managed-premium/g' manifests/prometheus/prometheus-deployment.yaml
@@ -109,11 +110,12 @@ jobs:
     - name: Configure kubectl
       run: |
         echo "${{ secrets.KUBE_CONFIG_DATA_PROD }}" | base64 -d > kubeconfig
-        export KUBECONFIG=kubeconfig
+        chmod 600 kubeconfig
 
     - name: Deploy to Production
+      env:
+        KUBECONFIG: kubeconfig
       run: |
-        export KUBECONFIG=kubeconfig
         
         # Update storage class for target environment
         sed -i 's/storageClassName: managed-premium/storageClassName: managed-premium/g' manifests/prometheus/prometheus-deployment.yaml
@@ -138,8 +140,9 @@ jobs:
         kubectl wait --for=condition=available --timeout=300s deployment/grafana -n monitoring
 
     - name: Verify deployment
+      env:
+        KUBECONFIG: kubeconfig
       run: |
-        export KUBECONFIG=kubeconfig
         echo "Verifying deployment health..."
         kubectl get pods -n monitoring
         kubectl get svc -n monitoring
@@ -162,11 +165,12 @@ jobs:
     - name: Configure kubectl for GKE
       run: |
         echo "${{ secrets.GKE_KUBE_CONFIG_DATA }}" | base64 -d > kubeconfig
-        export KUBECONFIG=kubeconfig
+        chmod 600 kubeconfig
 
     - name: Deploy to GKE
+      env:
+        KUBECONFIG: kubeconfig
       run: |
-        export KUBECONFIG=kubeconfig
         
         # Update storage class for GKE
         sed -i 's/storageClassName: managed-premium/storageClassName: standard-rwo/g' manifests/prometheus/prometheus-deployment.yaml
@@ -208,11 +212,12 @@ jobs:
     - name: Configure kubectl for EKS
       run: |
         echo "${{ secrets.EKS_KUBE_CONFIG_DATA }}" | base64 -d > kubeconfig
-        export KUBECONFIG=kubeconfig
+        chmod 600 kubeconfig
 
     - name: Deploy to EKS
+      env:
+        KUBECONFIG: kubeconfig
       run: |
-        export KUBECONFIG=kubeconfig
         
         # Update storage class for EKS
         sed -i 's/storageClassName: managed-premium/storageClassName: gp2/g' manifests/prometheus/prometheus-deployment.yaml
