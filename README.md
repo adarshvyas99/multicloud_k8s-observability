@@ -45,8 +45,6 @@ K8sObservabilityStack/
 ├── gitops/               # GitOps deployment configurations
 │   ├── argocd/           # ArgoCD application definitions
 │   └── flux/             # Flux GitRepository and Kustomization
-├── ci-cd/                # CI/CD pipeline configurations
-│   └── azure-devops/     # Azure DevOps pipeline
 ├── configs/              # Configuration files
 │   ├── prometheus/       # Prometheus rules and config
 │   ├── grafana/          # Grafana datasources and config
