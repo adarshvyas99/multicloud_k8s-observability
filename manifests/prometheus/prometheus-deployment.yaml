@@ -155,9 +155,16 @@ spec:
         app: prometheus
     spec:
       serviceAccountName: prometheus
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
       containers:
       - name: prometheus
         image: prom/prometheus:v2.45.0
+        securityContext:
+          runAsUser: 65534
+          runAsGroup: 65534
         args:
           - '--config.file=/etc/prometheus/prometheus.yml'
           - '--storage.tsdb.path=/prometheus/'
@@ -170,11 +177,11 @@ spec:
         - containerPort: 9090
         resources:
           requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
             cpu: 500m
             memory: 1Gi
-          limits:
-            cpu: 1000m
-            memory: 2Gi
         volumeMounts:
         - name: prometheus-config-volume
           mountPath: /etc/prometheus/

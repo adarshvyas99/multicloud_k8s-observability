@@ -24,6 +24,7 @@ on:
 
 env:
   KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+  GRAFANA_ADMIN_USER: ${{ secrets.GRAFANA_ADMIN_USER }}
   GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
 
 jobs:
@@ -61,12 +62,15 @@ jobs:
 
     - name: Configure kubectl
       run: |
-        echo "${{ secrets.KUBE_CONFIG_DATA_DEV }}" | base64 -d > kubeconfig
-        export KUBECONFIG=kubeconfig
+        echo "${{ secrets.KUBE_CONFIG_DATA_DEV }}" | base64 -d | tr -d '\r' > kubeconfig
+        chmod 600 kubeconfig
+        # Validate kubeconfig
+        kubectl config view --kubeconfig=kubeconfig --minify
 
     - name: Deploy to Development
+      env:
+        KUBECONFIG: kubeconfig
       run: |
-        export KUBECONFIG=kubeconfig
         
         # Update storage class for target environment
         sed -i 's/storageClassName: managed-premium/storageClassName: managed-premium/g' manifests/prometheus/prometheus-deployment.yaml
@@ -75,6 +79,11 @@ jobs:
         
         # Deploy components
         kubectl apply -f manifests/namespace/monitoring-namespace.yaml
+        
+        # Create Grafana configuration
+        envsubst < manifests/grafana/grafana-config.template.yaml | kubectl apply -f -
+        envsubst < manifests/grafana/grafana-secret.template.yaml | kubectl apply -f -
+        
         kubectl apply -f manifests/exporters/
         kubectl apply -f manifests/prometheus/prometheus-deployment.yaml
         kubectl apply -f manifests/alertmanager/alertmanager-deployment.yaml
@@ -102,12 +111,15 @@ jobs:
 
     - name: Configure kubectl
       run: |
-        echo "${{ secrets.KUBE_CONFIG_DATA_PROD }}" | base64 -d > kubeconfig
-        export KUBECONFIG=kubeconfig
+        echo "${{ secrets.KUBE_CONFIG_DATA_PROD }}" | base64 -d | tr -d '\r' > kubeconfig
+        chmod 600 kubeconfig
+        # Validate kubeconfig
+        kubectl config view --kubeconfig=kubeconfig --minify
 
     - name: Deploy to Production
+      env:
+        KUBECONFIG: kubeconfig
       run: |
-        export KUBECONFIG=kubeconfig
         
         # Update storage class for target environment
         sed -i 's/storageClassName: managed-premium/storageClassName: managed-premium/g' manifests/prometheus/prometheus-deployment.yaml
@@ -116,6 +128,11 @@ jobs:
         
         # Deploy components
         kubectl apply -f manifests/namespace/monitoring-namespace.yaml
+        
+        # Create Grafana configuration
+        envsubst < manifests/grafana/grafana-config.template.yaml | kubectl apply -f -
+        envsubst < manifests/grafana/grafana-secret.template.yaml | kubectl apply -f -
+        
         kubectl apply -f manifests/exporters/
         kubectl apply -f manifests/prometheus/prometheus-deployment.yaml
         kubectl apply -f manifests/alertmanager/alertmanager-deployment.yaml
@@ -127,8 +144,9 @@ jobs:
         kubectl wait --for=condition=available --timeout=300s deployment/grafana -n monitoring
 
     - name: Verify deployment
+      env:
+        KUBECONFIG: kubeconfig
       run: |
-        export KUBECONFIG=kubeconfig
         echo "Verifying deployment health..."
         kubectl get pods -n monitoring
         kubectl get svc -n monitoring
@@ -150,12 +168,15 @@ jobs:
 
     - name: Configure kubectl for GKE
       run: |
-        echo "${{ secrets.GKE_KUBE_CONFIG_DATA }}" | base64 -d > kubeconfig
-        export KUBECONFIG=kubeconfig
+        echo "${{ secrets.GKE_KUBE_CONFIG_DATA }}" | base64 -d | tr -d '\r' > kubeconfig
+        chmod 600 kubeconfig
+        # Validate kubeconfig
+        kubectl config view --kubeconfig=kubeconfig --minify
 
     - name: Deploy to GKE
+      env:
+        KUBECONFIG: kubeconfig
       run: |
-        export KUBECONFIG=kubeconfig
         
         # Update storage class for GKE
         sed -i 's/storageClassName: managed-premium/storageClassName: standard-rwo/g' manifests/prometheus/prometheus-deployment.yaml
@@ -164,6 +185,11 @@ jobs:
         
         # Deploy components
         kubectl apply -f manifests/namespace/monitoring-namespace.yaml
+        
+        # Create Grafana configuration
+        envsubst < manifests/grafana/grafana-config.template.yaml | kubectl apply -f -
+        envsubst < manifests/grafana/grafana-secret.template.yaml | kubectl apply -f -
+        
         kubectl apply -f manifests/exporters/
         kubectl apply -f manifests/prometheus/prometheus-deployment.yaml
         kubectl apply -f manifests/alertmanager/alertmanager-deployment.yaml
@@ -191,12 +217,15 @@ jobs:
 
     - name: Configure kubectl for EKS
       run: |
-        echo "${{ secrets.EKS_KUBE_CONFIG_DATA }}" | base64 -d > kubeconfig
-        export KUBECONFIG=kubeconfig
+        echo "${{ secrets.EKS_KUBE_CONFIG_DATA }}" | base64 -d | tr -d '\r' > kubeconfig
+        chmod 600 kubeconfig
+        # Validate kubeconfig
+        kubectl config view --kubeconfig=kubeconfig --minify
 
     - name: Deploy to EKS
+      env:
+        KUBECONFIG: kubeconfig
       run: |
-        export KUBECONFIG=kubeconfig
         
         # Update storage class for EKS
         sed -i 's/storageClassName: managed-premium/storageClassName: gp2/g' manifests/prometheus/prometheus-deployment.yaml
@@ -205,6 +234,11 @@ jobs:
         
         # Deploy components
         kubectl apply -f manifests/namespace/monitoring-namespace.yaml
+        
+        # Create Grafana configuration
+        envsubst < manifests/grafana/grafana-config.template.yaml | kubectl apply -f -
+        envsubst < manifests/grafana/grafana-secret.template.yaml | kubectl apply -f -
+        
         kubectl apply -f manifests/exporters/
         kubectl apply -f manifests/prometheus/prometheus-deployment.yaml
         kubectl apply -f manifests/alertmanager/alertmanager-deployment.yaml

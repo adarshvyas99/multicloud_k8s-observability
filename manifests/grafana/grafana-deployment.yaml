@@ -12,41 +12,7 @@ data:
       url: http://prometheus:9090
       access: proxy
       isDefault: true
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: grafana-config
-  namespace: monitoring
-data:
-  grafana.ini: |
-    [analytics]
-    check_for_updates = true
-    [grafana_net]
-    url = https://grafana.net
-    [log]
-    mode = console
-    [paths]
-    data = /var/lib/grafana/data
-    logs = /var/log/grafana
-    plugins = /var/lib/grafana/plugins
-    provisioning = /etc/grafana/provisioning
-    [security]
-    admin_user = admin
-    admin_password = admin123
-    [server]
-    http_port = 3000
-    root_url = http://localhost:3000
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: grafana-credentials
-  namespace: monitoring
-type: Opaque
-data:
-  admin-user: YWRtaW4=  # admin
-  admin-password: YWRtaW4xMjM=  # admin123
+
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -78,9 +44,16 @@ spec:
       labels:
         app: grafana
     spec:
+      securityContext:
+        runAsUser: 472
+        runAsGroup: 472
+        fsGroup: 472
       containers:
       - name: grafana
         image: grafana/grafana:10.0.0
+        securityContext:
+          runAsUser: 472
+          runAsGroup: 472
         ports:
         - containerPort: 3000
         resources:
@@ -109,6 +82,10 @@ spec:
         - name: grafana-datasources
           mountPath: /etc/grafana/provisioning/datasources
           readOnly: false
+        - name: grafana-dashboard-provider
+          mountPath: /etc/grafana/provisioning/dashboards
+        - name: grafana-dashboards
+          mountPath: /var/lib/grafana/dashboards
         - name: grafana-config
           mountPath: /etc/grafana/grafana.ini
           subPath: grafana.ini
@@ -131,6 +108,12 @@ spec:
       - name: grafana-datasources
         configMap:
           name: grafana-datasources
+      - name: grafana-dashboard-provider
+        configMap:
+          name: grafana-dashboard-provider
+      - name: grafana-dashboards
+        configMap:
+          name: grafana-dashboards
       - name: grafana-config
         configMap:
           name: grafana-config

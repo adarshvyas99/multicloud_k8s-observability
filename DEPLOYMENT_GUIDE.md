@@ -283,10 +283,11 @@ Infrastructure → Infrastructure Team (Email + Runbook)
 ## 🚀 Get Started Now!
 
 1. **Clone this repository**
-2. **Review the architecture documentation**
-3. **Run the deployment script for your cloud provider**
-4. **Validate the deployment**
-5. **Configure alert notifications**
-6. **Start monitoring your applications!**
+2. **Setup environment variables and secrets** - See [Environment Setup Guide](docs/environment-setup.md)
+3. **Review the architecture documentation**
+4. **Run the deployment script for your cloud provider**
+5. **Validate the deployment**
+6. **Configure alert notifications**
+7. **Start monitoring your applications!**
 
 **Your observability stack will be monitoring all pods across all namespaces within minutes!** 🎉

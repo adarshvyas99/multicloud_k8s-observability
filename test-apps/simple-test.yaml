@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-app
+  namespace: default
+  labels:
+    app: simple-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: simple-app
+  template:
+    metadata:
+      labels:
+        app: simple-app
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: app
+        image: prom/node-exporter:v1.3.1
+        ports:
+        - containerPort: 9100
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simple-app
+  namespace: default
+  labels:
+    app: simple-app
+spec:
+  selector:
+    app: simple-app
+  ports:
+  - name: metrics
+    port: 9100
+    targetPort: 9100
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: busybox-test
+  namespace: default
+  labels:
+    app: busybox-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: busybox-test
+  template:
+    metadata:
+      labels:
+        app: busybox-test
+    spec:
+      containers:
+      - name: busybox
+        image: busybox:1.35
+        command: ['sleep', '3600']
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 50m
+            memory: 32Mi

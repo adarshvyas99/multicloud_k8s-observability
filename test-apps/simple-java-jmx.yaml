@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-java-app
+  namespace: default
+  labels:
+    app: simple-java-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simple-java-app
+  template:
+    metadata:
+      labels:
+        app: simple-java-app
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: java-app
+        image: prom/jmx-exporter:0.19.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: JMX_EXPORTER_CONFIG
+          value: |
+            rules:
+            - pattern: "java.lang<type=Memory><>HeapMemoryUsage"
+              name: jvm_memory_heap_bytes
+              type: GAUGE
+            - pattern: "java.lang<type=Memory><>NonHeapMemoryUsage"  
+              name: jvm_memory_nonheap_bytes
+              type: GAUGE
+            - pattern: "java.lang<type=Threading><>ThreadCount"
+              name: jvm_threads_current
+              type: GAUGE
+        resources:
+          requests:
+            cpu: 20m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simple-java-app
+  namespace: default
+  labels:
+    app: simple-java-app
+spec:
+  selector:
+    app: simple-java-app
+  ports:
+  - name: metrics
+    port: 8080
+    targetPort: 8080
