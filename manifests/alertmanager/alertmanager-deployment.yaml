@@ -34,48 +34,12 @@ data:
     - name: 'critical-alerts'
       email_configs:
       - to: 'devops-team@company.com'
-        subject: 'CRITICAL: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
-        body: |
-          {{ range .Alerts }}
-          Alert: {{ .Annotations.summary }}
-          Description: {{ .Annotations.description }}
-          Severity: {{ .Labels.severity }}
-          Namespace: {{ .Labels.namespace }}
-          Pod: {{ .Labels.pod }}
-          Time: {{ .StartsAt }}
-          {{ end }}
     - name: 'pod-alerts'
       email_configs:
       - to: 'dev-team@company.com'
-        subject: 'Pod Alert: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
-        body: |
-          {{ range .Alerts }}
-          Pod Issue Detected:
-          - Alert: {{ .Annotations.summary }}
-          - Description: {{ .Annotations.description }}
-          - Namespace: {{ .Labels.namespace }}
-          - Pod: {{ .Labels.pod }}
-          - Container: {{ .Labels.container }}
-          - Time: {{ .StartsAt }}
-          
-          Root Cause Analysis Steps:
-          1. Check pod logs: kubectl logs {{ .Labels.pod }} -n {{ .Labels.namespace }}
-          2. Describe pod: kubectl describe pod {{ .Labels.pod }} -n {{ .Labels.namespace }}
-          3. Check events: kubectl get events -n {{ .Labels.namespace }} --sort-by='.lastTimestamp'
-          {{ end }}
     - name: 'infrastructure-alerts'
       email_configs:
       - to: 'infrastructure-team@company.com'
-        subject: 'Infrastructure Alert: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
-        body: |
-          {{ range .Alerts }}
-          Infrastructure Issue:
-          - Alert: {{ .Annotations.summary }}
-          - Description: {{ .Annotations.description }}
-          - Component: {{ .Labels.component }}
-          - Node: {{ .Labels.node }}
-          - Time: {{ .StartsAt }}
-          {{ end }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -107,9 +71,16 @@ spec:
       labels:
         app: alertmanager
     spec:
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
       containers:
       - name: alertmanager
         image: prom/alertmanager:v0.25.0
+        securityContext:
+          runAsUser: 65534
+          runAsGroup: 65534
         args:
           - '--config.file=/etc/alertmanager/alertmanager.yml'
           - '--storage.path=/alertmanager'

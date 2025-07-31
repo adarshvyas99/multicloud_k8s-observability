@@ -44,9 +44,16 @@ spec:
       labels:
         app: grafana
     spec:
+      securityContext:
+        runAsUser: 472
+        runAsGroup: 472
+        fsGroup: 472
       containers:
       - name: grafana
         image: grafana/grafana:10.0.0
+        securityContext:
+          runAsUser: 472
+          runAsGroup: 472
         ports:
         - containerPort: 3000
         resources:

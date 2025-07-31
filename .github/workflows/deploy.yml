@@ -62,10 +62,14 @@ jobs:
 
     - name: Configure kubectl
       run: |
-        echo "${{ secrets.KUBE_CONFIG_DATA_DEV }}" | base64 -d | tr -d '\r' > kubeconfig
+        echo "${{ secrets.KUBE_CONFIG_DATA_DEV }}" | base64 -d | tr -d '\r\n\t' | tr -cd '\11\12\15\40-\176' > kubeconfig
         chmod 600 kubeconfig
-        # Validate kubeconfig
-        kubectl config view --kubeconfig=kubeconfig --minify
+        # Debug kubeconfig content
+        echo "Kubeconfig file size: $(wc -c < kubeconfig)"
+        echo "First few lines:"
+        head -3 kubeconfig
+        # Test kubectl config
+        kubectl config view --kubeconfig=kubeconfig --minify --output=yaml
 
     - name: Deploy to Development
       env:
@@ -111,10 +115,14 @@ jobs:
 
     - name: Configure kubectl
       run: |
-        echo "${{ secrets.KUBE_CONFIG_DATA_PROD }}" | base64 -d | tr -d '\r' > kubeconfig
+        echo "${{ secrets.KUBE_CONFIG_DATA_PROD }}" | base64 -d | tr -d '\r\n\t' | tr -cd '\11\12\15\40-\176' > kubeconfig
         chmod 600 kubeconfig
-        # Validate kubeconfig
-        kubectl config view --kubeconfig=kubeconfig --minify
+        # Debug kubeconfig content
+        echo "Kubeconfig file size: $(wc -c < kubeconfig)"
+        echo "First few lines:"
+        head -3 kubeconfig
+        # Test kubectl config
+        kubectl config view --kubeconfig=kubeconfig --minify --output=yaml
 
     - name: Deploy to Production
       env:
@@ -168,10 +176,14 @@ jobs:
 
     - name: Configure kubectl for GKE
       run: |
-        echo "${{ secrets.GKE_KUBE_CONFIG_DATA }}" | base64 -d | tr -d '\r' > kubeconfig
+        echo "${{ secrets.GKE_KUBE_CONFIG_DATA }}" | base64 -d | tr -d '\r\n\t' | tr -cd '\11\12\15\40-\176' > kubeconfig
         chmod 600 kubeconfig
-        # Validate kubeconfig
-        kubectl config view --kubeconfig=kubeconfig --minify
+        # Debug kubeconfig content
+        echo "Kubeconfig file size: $(wc -c < kubeconfig)"
+        echo "First few lines:"
+        head -3 kubeconfig
+        # Test kubectl config
+        kubectl config view --kubeconfig=kubeconfig --minify --output=yaml
 
     - name: Deploy to GKE
       env:
@@ -217,10 +229,14 @@ jobs:
 
     - name: Configure kubectl for EKS
       run: |
-        echo "${{ secrets.EKS_KUBE_CONFIG_DATA }}" | base64 -d | tr -d '\r' > kubeconfig
+        echo "${{ secrets.EKS_KUBE_CONFIG_DATA }}" | base64 -d | tr -d '\r\n\t' | tr -cd '\11\12\15\40-\176' > kubeconfig
         chmod 600 kubeconfig
-        # Validate kubeconfig
-        kubectl config view --kubeconfig=kubeconfig --minify
+        # Debug kubeconfig content
+        echo "Kubeconfig file size: $(wc -c < kubeconfig)"
+        echo "First few lines:"
+        head -3 kubeconfig
+        # Test kubectl config
+        kubectl config view --kubeconfig=kubeconfig --minify --output=yaml
 
     - name: Deploy to EKS
       env:
