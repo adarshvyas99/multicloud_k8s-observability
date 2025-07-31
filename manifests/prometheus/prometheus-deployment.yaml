@@ -134,7 +134,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 50Gi
+      storage: 5Gi
   storageClassName: managed-premium # AKS default, will be updated for GKE or EKS
 ---
 apiVersion: apps/v1
@@ -170,11 +170,11 @@ spec:
         - containerPort: 9090
         resources:
           requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
             cpu: 500m
             memory: 1Gi
-          limits:
-            cpu: 1000m
-            memory: 2Gi
         volumeMounts:
         - name: prometheus-config-volume
           mountPath: /etc/prometheus/
